@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ระบบ ERP ร้านค้า (ออนไลน์)</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div id="setupNotice" class="hidden">
+    ยังไม่ได้ตั้งค่าการเชื่อมต่อ Supabase — เปิดไฟล์ app.js แล้วใส่ SUPABASE_URL และ SUPABASE_ANON_KEY ของคุณในส่วนบนสุดของไฟล์
+  </div>
+
+  <div id="loginScreen" class="hidden">
+    <div class="loginCard">
+      <h2>เข้าสู่ระบบ ERP</h2>
+      <p>กรอกอีเมลและรหัสผ่านที่แอดมินตั้งให้</p>
+      <label>อีเมล</label>
+      <input id="login-email" type="email" placeholder="name@shop.com">
+      <label>รหัสผ่าน</label>
+      <input id="login-password" type="password" placeholder="••••••••">
+      <button class="btn" id="login-btn">เข้าสู่ระบบ</button>
+      <div class="loginError" id="login-error"></div>
+    </div>
+  </div>
+
+  <div id="app" class="hidden">
+    <header>
+      <div>
+        <h1>ระบบ ERP ร้านค้า</h1>
+        <div class="sub">สต็อกสินค้า · ขาย · ซื้อ — ใช้งานพร้อมกันได้หลายคน</div>
+      </div>
+      <div class="userbox">
+        <span id="userEmail"></span>
+        <button class="logout" id="logout-btn">ออกจากระบบ</button>
+      </div>
+    </header>
+
+    <nav>
+      <button class="tab active" data-tab="dashboard">แดชบอร์ด</button>
+      <button class="tab" data-tab="stock">คลังสินค้า</button>
+      <button class="tab" data-tab="sell">ขายสินค้า</button>
+      <button class="tab" data-tab="buy">รับซื้อเข้าสต็อก</button>
+      <button class="tab" data-tab="history">ประวัติ</button>
+    </nav>
+
+    <main>
+      <section id="tab-dashboard">
+        <div class="grid grid4">
+          <div class="card metric"><div class="label">มูลค่าสต็อก (ตามต้นทุน)</div><div class="value" id="m-stockValue">฿0</div></div>
+          <div class="card metric"><div class="label">ยอดขายวันนี้</div><div class="value" id="m-todaySales">฿0</div></div>
+          <div class="card metric"><div class="label">กำไรวันนี้</div><div class="value" id="m-todayProfit">฿0</div></div>
+          <div class="card metric"><div class="label">จำนวนสินค้าใกล้หมด</div><div class="value" id="m-lowStock">0</div></div>
+        </div>
+
+        <div class="panel">
+          <h2>สินค้าใกล้หมด / หมดสต็อก</h2>
+          <table><thead><tr><th>สินค้า</th><th>คงเหลือ</th><th>จุดสั่งซื้อ</th><th>สถานะ</th></tr></thead><tbody id="lowStockBody"></tbody></table>
+          <div class="empty hidden" id="lowStockEmpty">ไม่มีสินค้าใกล้หมด</div>
+        </div>
+
+        <div class="panel">
+          <h2>ขายล่าสุด</h2>
+          <table><thead><tr><th>วันที่</th><th>โดย</th><th>รายการ</th><th>ยอดรวม</th></tr></thead><tbody id="recentSalesBody"></tbody></table>
+          <div class="empty hidden" id="recentSalesEmpty">ยังไม่มีการขาย</div>
+        </div>
+      </section>
+
+      <section id="tab-stock" class="hidden">
+        <div class="panel">
+          <h2 id="stockFormTitle">เพิ่มสินค้าใหม่</h2>
+          <div class="row">
+            <div><label>ชื่อสินค้า</label><input id="p-name" placeholder="เช่น น้ำดื่ม 600ml"></div>
+            <div><label>รหัส SKU (ไม่บังคับ)</label><input id="p-sku" placeholder="WTR-600"></div>
+            <div><label>ต้นทุนต่อหน่วย (฿)</label><input id="p-cost" type="number" min="0" step="0.01" placeholder="0"></div>
+            <div><label>ราคาขายต่อหน่วย (฿)</label><input id="p-price" type="number" min="0" step="0.01" placeholder="0"></div>
+            <div><label>จำนวนคงเหลือ</label><input id="p-qty" type="number" min="0" step="1" placeholder="0"></div>
+            <div><label>จุดสั่งซื้อ</label><input id="p-min" type="number" min="0" step="1" placeholder="5"></div>
+            <div>
+              <button class="btn" id="p-save">บันทึกสินค้า</button>
+              <button class="btn secondary hidden" id="p-cancel">ยกเลิก</button>
+            </div>
+          </div>
+          <input type="hidden" id="p-editId">
+        </div>
+
+        <div class="panel">
+          <h2>รายการสินค้าทั้งหมด</h2>
+          <table>
+            <thead><tr><th>สินค้า</th><th>SKU</th><th>ต้นทุน</th><th>ราคาขาย</th><th>คงเหลือ</th><th>สถานะ</th><th></th></tr></thead>
+            <tbody id="stockTableBody"></tbody>
+          </table>
+          <div class="empty hidden" id="stockEmpty">ยังไม่มีสินค้า เริ่มเพิ่มสินค้าด้านบนได้เลย</div>
+        </div>
+      </section>
+
+      <section id="tab-sell" class="hidden">
+        <div class="panel">
+          <h2>สร้างรายการขาย</h2>
+          <div class="row">
+            <div style="flex:1;min-width:220px;"><label>เลือกสินค้า</label><select id="sell-product"></select></div>
+            <div><label>จำนวน</label><input id="sell-qty" type="number" min="1" step="1" value="1" style="width:90px;"></div>
+            <div><button class="btn secondary" id="sell-add">+ เพิ่มลงรายการ</button></div>
+          </div>
+          <div id="sell-cart"></div>
+          <div class="total-line"><span>ยอดรวม</span><span id="sell-total">฿0</span></div>
+          <div class="row" style="margin-top:14px;">
+            <button class="btn" id="sell-confirm">ยืนยันการขาย</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-buy" class="hidden">
+        <div class="panel">
+          <h2>บันทึกการรับซื้อเข้าสต็อก</h2>
+          <div class="row">
+            <div style="flex:1;min-width:220px;"><label>เลือกสินค้า</label><select id="buy-product"></select></div>
+            <div><label>จำนวนที่รับเข้า</label><input id="buy-qty" type="number" min="1" step="1" value="1" style="width:110px;"></div>
+            <div><label>ต้นทุนต่อหน่วย (฿)</label><input id="buy-cost" type="number" min="0" step="0.01" style="width:120px;"></div>
+            <div><button class="btn secondary" id="buy-add">+ เพิ่มลงรายการ</button></div>
+          </div>
+          <div id="buy-cart"></div>
+          <div class="total-line"><span>ยอดรวมที่ต้องจ่าย</span><span id="buy-total">฿0</span></div>
+          <div class="row" style="margin-top:14px;">
+            <button class="btn" id="buy-confirm">ยืนยันรับเข้าสต็อก</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-history" class="hidden">
+        <div class="panel">
+          <div class="row" style="justify-content:space-between;">
+            <h2 style="margin:0;">ประวัติทั้งหมด</h2>
+            <div>
+              <button class="tag-btn" data-filter="all">ทั้งหมด</button>
+              <button class="tag-btn" data-filter="sale">การขาย</button>
+              <button class="tag-btn" data-filter="purchase">การซื้อ</button>
+            </div>
+          </div>
+          <table style="margin-top:10px;">
+            <thead><tr><th>วันที่</th><th>ประเภท</th><th>โดย</th><th>รายการ</th><th>จำนวนรวม</th><th>ยอดเงิน</th></tr></thead>
+            <tbody id="historyTableBody"></tbody>
+          </table>
+          <div class="empty hidden" id="historyEmpty">ยังไม่มีประวัติ</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
