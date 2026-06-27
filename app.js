@@ -1,10 +1,7 @@
-// =====================================================
-// ตั้งค่าการเชื่อมต่อ Supabase ที่นี่
-// หาได้จาก Supabase Dashboard > Project Settings > API
-// =====================================================
+
 const SUPABASE_URL = 'https://glbacatnvkbhvofyoygu.supabase.co'; 
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdsYmFjYXRudmtiaHZvZnlveWd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NzA1MDgsImV4cCI6MjA5ODE0NjUwOH0.kFznkE22KqDiGyrZsz2UAe_MMyDvj74bR0OLrx0HNlY';
-// =====================================================
+
 
 let supabase;
 if (!SUPABASE_URL.includes('YOUR_SUPABASE')) {
