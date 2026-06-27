@@ -1,14 +1,6 @@
 const SUPABASE_URL = 'https://glbacatnvkbhvofyoygu.supabase.co'; 
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdsYmFjYXRudmtiaHZvZnlveWd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NzA1MDgsImV4cCI6MjA5ODE0NjUwOH0.kFznkE22KqDiGyrZsz2UAe_MMyDvj74bR0OLrx0HNlY';
 
-
-let supabase;
-if (!SUPABASE_URL.includes('YOUR_SUPABASE')) {
-  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-} else {
-  document.getElementById('setupNotice').classList.remove('hidden');
-}
-
 // FORMAT & UTILITY FUNCTIONS
 function fmt(n) { 
   return '฿' + (Math.round((n || 0) * 100) / 100).toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 2 }); 
