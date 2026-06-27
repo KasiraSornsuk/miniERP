@@ -3,7 +3,7 @@
 // หาได้จาก Supabase Dashboard > Project Settings > API
 // =====================================================
 const SUPABASE_URL = 'https://glbacatnvkbhvofyoygu.supabase.co'; // เช่น https://xxxxx.supabase.co
-const SUPABASE_ANON_KEY = 'sb_publishable_pRrUg7aU4K1uQxxu2PEb1g_EFGTwkZ5';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdsYmFjYXRudmtiaHZvZnlveWd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NzA1MDgsImV4cCI6MjA5ODE0NjUwOH0.kFznkE22KqDiGyrZsz2UAe_MMyDvj74bR0OLrx0HNlY';
 // =====================================================
 
 let supabase;
