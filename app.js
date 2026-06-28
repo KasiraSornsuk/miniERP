@@ -1,8 +1,8 @@
 const SUPABASE_URL = 'https://glbacatnvkbhvofyoygu.supabase.co'; 
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdsYmFjYXRudmtiaHZvZnlveWd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NzA1MDgsImV4cCI6MjA5ODE0NjUwOH0.kFznkE22KqDiGyrZsz2UAe_MMyDvj74bR0OLrx0HNlY';
 
-let supabase;
-supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let sb;
+sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // FORMAT & UTILITY FUNCTIONS
 function fmt(n) { 
@@ -27,8 +27,8 @@ function toast(msg) {
 
 // ---------- AUTH SYSTEM ----------
 async function checkSession() {
-  if (!supabase) return;
-  const { data } = await supabase.auth.getSession();
+  if (!sb) return;
+  const { data } = await sb.auth.getSession();
   if (data.session) {
     showApp(data.session.user);
   } else {
@@ -42,13 +42,13 @@ document.getElementById('login-btn')?.addEventListener('click', async () => {
   const errBox = document.getElementById('login-error');
   errBox.textContent = '';
   if (!email || !password) { errBox.textContent = 'กรุณากรอกอีเมลและรหัสผ่าน'; return; }
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
   if (error) { errBox.textContent = 'เข้าสู่ระบบไม่สำเร็จ: อีเมลหรือรหัสผ่านไม่ถูกต้อง'; return; }
   showApp(data.user);
 });
 
 document.getElementById('logout-btn')?.addEventListener('click', async () => {
-  await supabase.auth.signOut();
+  await sb.auth.signOut();
   location.reload();
 });
 
@@ -82,15 +82,15 @@ async function loadAll() {
   renderDashboard(); renderStock(); renderProductSelects(); renderHistory();
 }
 async function loadProducts() {
-  const { data, error } = await supabase.from('products').select('*').order('name');
+  const { data, error } = await sb.from('products').select('*').order('name');
   if (!error) PRODUCTS = data;
 }
 async function loadSales() {
-  const { data, error } = await supabase.from('sales').select('*, sale_items(*)').order('created_at', { ascending: false });
+  const { data, error } = await sb.from('sales').select('*, sale_items(*)').order('created_at', { ascending: false });
   if (!error) SALES = data;
 }
 async function loadPurchases() {
-  const { data, error } = await supabase.from('purchases').select('*, purchase_items(*)').order('created_at', { ascending: false });
+  const { data, error } = await sb.from('purchases').select('*, purchase_items(*)').order('created_at', { ascending: false });
   if (!error) PURCHASES = data;
 }
 
@@ -112,11 +112,11 @@ document.getElementById('p-save').addEventListener('click', async () => {
   if (!name) { toast('กรุณากรอกชื่อสินค้า'); return; }
 
   if (editId) {
-    const { error } = await supabase.from('products').update({ name, sku, cost, price, qty, min_qty }).eq('id', editId);
+    const { error } = await sb.from('products').update({ name, sku, cost, price, qty, min_qty }).eq('id', editId);
     if (error) { toast('เกิดข้อผิดพลาด: ' + error.message); return; }
     toast('แก้ไขสินค้าเรียบร้อย');
   } else {
-    const { error } = await supabase.from('products').insert({ name, sku, cost, price, qty, min_qty });
+    const { error } = await sb.from('products').insert({ name, sku, cost, price, qty, min_qty });
     if (error) { toast('เกิดข้อผิดพลาด: ' + error.message); return; }
     toast('เพิ่มสินค้าเรียบร้อย');
   }
@@ -150,7 +150,7 @@ function editProduct(id) {
 
 async function deleteProduct(id) {
   if (!confirm('ลบสินค้านี้ออกจากคลังสินค้า?')) return;
-  const { error } = await supabase.from('products').delete().eq('id', id);
+  const { error } = await sb.from('products').delete().eq('id', id);
   if (error) { toast('ลบไม่ได้: ' + error.message); return; }
   await loadProducts();
   renderStock(); renderProductSelects();
@@ -227,20 +227,20 @@ function removeSellItem(i) { sellCart.splice(i, 1); renderSellCart(); }
 
 document.getElementById('sell-confirm').addEventListener('click', async () => {
   if (sellCart.length === 0) { toast('ยังไม่มีรายการขาย'); return; }
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await sb.auth.getUser();
   let total = 0, cost = 0;
   sellCart.forEach(c => { total += c.qty * c.price; cost += c.qty * c.cost; });
 
-  const { data: sale, error: saleErr } = await supabase.from('sales')
+  const { data: sale, error: saleErr } = await sb.from('sales')
     .insert({ total, cost, created_by: user.email }).select().single();
   if (saleErr) { toast('บันทึกไม่สำเร็จ: ' + saleErr.message); return; }
 
   const items = sellCart.map(c => ({ sale_id: sale.id, product_id: c.productId, name: c.name, qty: c.qty, price: c.price }));
-  await supabase.from('sale_items').insert(items);
+  await sb.from('sale_items').insert(items);
 
   for (const c of sellCart) {
     const p = PRODUCTS.find(x => x.id === c.productId);
-    await supabase.from('products').update({ qty: p.qty - c.qty }).eq('id', c.productId);
+    await sb.from('products').update({ qty: p.qty - c.qty }).eq('id', c.productId);
   }
 
   sellCart = [];
@@ -287,20 +287,20 @@ function removeBuyItem(i) { buyCart.splice(i, 1); renderBuyCart(); }
 
 document.getElementById('buy-confirm').addEventListener('click', async () => {
   if (buyCart.length === 0) { toast('ยังไม่มีรายการรับซื้อ'); return; }
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await sb.auth.getUser();
   let total = 0;
   buyCart.forEach(c => { total += c.qty * c.cost; });
 
-  const { data: purchase, error: pErr } = await supabase.from('purchases')
+  const { data: purchase, error: pErr } = await sb.from('purchases')
     .insert({ total, created_by: user.email }).select().single();
   if (pErr) { toast('บันทึกไม่สำเร็จ: ' + pErr.message); return; }
 
   const items = buyCart.map(c => ({ purchase_id: purchase.id, product_id: c.productId, name: c.name, qty: c.qty, cost: c.cost }));
-  await supabase.from('purchase_items').insert(items);
+  await sb.from('purchase_items').insert(items);
 
   for (const c of buyCart) {
     const p = PRODUCTS.find(x => x.id === c.productId);
-    await supabase.from('products').update({ qty: p.qty + c.qty, cost: c.cost }).eq('id', c.productId);
+    await sb.from('products').update({ qty: p.qty + c.qty, cost: c.cost }).eq('id', c.productId);
   }
 
   buyCart = [];
