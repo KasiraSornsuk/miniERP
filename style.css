@@ -308,6 +308,10 @@ button.icon:hover {
   background: var(--bg);
 }
 
+#loginScreen.hidden {
+  display: none;
+}
+
 .loginCard {
   background: #fff;
   border: 1px solid var(--border);
